@@ -12,7 +12,7 @@ def test_madras_vanilla():
           " Verify if the number of dimensions {} is right.".format(obs, len(obs)))
     print("Testing step...")
     for t in range(20000):
-        obs, r, done, _ = env.step([[0.0, 1.0, -1.0]])
+        obs, r, done, _ = env.step({"MadrasAgent_0": [0.0, 1.0, -1.0]})
         print("{}: reward={}, done={}".format(t, r, done))
         dones = [x for x in done.values()]
         if np.any(dones):
@@ -28,9 +28,10 @@ def test_madras_pid():
           " Verify if the number of dimensions {} is right.".format(obs, len(obs)))
     print("Testing step...")
     for t in range(2000):
-        obs, r, done, _ = env.step([[0.3, 0.5],
-                                    [-0.3, 1.0]
-                                    ])
+        obs, r, done, _ = env.step({"MadrasAgent_0": [0.3, 0.5],
+                                    "MadrasAgent_1": [-0.3, 1.0]
+                                })
+        #print("{}".format(obs))
         print("{}: reward={}, done={}".format(t, r, done))
         dones = [x for x in done.values()]
         if ((np.any(dones)) or (t > 0 and t % 100 == 0)):

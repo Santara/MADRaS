@@ -67,7 +67,7 @@ class MadrasAgent(TorcsEnv, gym.Env):
         self.obs_dim = self.observation_manager.get_state_dim()  # No. of sensors input
         self.state_dim = self.observation_manager.get_state_dim()
         self.reward_manager = rm.RewardManager(self._config.rewards)
-        self.done_manager = dm.DoneManager(self._config.dones)
+        self.done_manager = dm.DoneManager(self._config.dones, self.name)
         self.initial_reset = True
         self.step_num = 0
 
@@ -265,6 +265,7 @@ class MadrasEnv(gym.Env):
         self.torcs_proc = None
         self.seed()
         self.start_torcs_process()
+        self.num_agents = 0
         self.agents = OrderedDict()
 
         if self._config.traffic:
@@ -281,6 +282,7 @@ class MadrasEnv(gym.Env):
                                                 {"track_len": self._config.track_len,
                                                  "max_steps": self._config.max_steps
                                                 })
+                self.num_agents += 1
 
         # self.action_dim = self.agents[0].action_dim  # TODO(santara): Can I not have different action dims for different agents?
         self.initial_reset = True
@@ -371,23 +373,34 @@ class MadrasEnv(gym.Env):
         return s_t
 
     def step(self, action):
-        next_obs, reward, done, info = {}, {}, {}, {}
+        next_obs, reward, done, info = {}, {}, {'__all__': False}, {}
         manager = multiprocessing.Manager()
         return_dict = manager.dict()
         e = multiprocessing.Event()
         jobs = []
-        for i, agent in enumerate(self.agents):
-            p = multiprocessing.Process(target=self.agents[agent].step, args=(action[i], e, return_dict))
+        for agent in self.agents:
+            p = multiprocessing.Process(target=self.agents[agent].step, args=(action[agent], e, return_dict))
             jobs.append(p)
             p.start()
 
         for proc in jobs:
             proc.join()
+        
+        done_check = False
+
         for agent in self.agents:
             next_obs[agent] = return_dict[agent][0]
             reward[agent] = return_dict[agent][1]
             done[agent] = return_dict[agent][2]
+            if (done[agent] == True): 
+                """
+                    Although rllib supports individual agent resets
+                    but MADRaS Env as of now has to be reset even if 
+                    one of the agents hits done.
+                """
+                done_check = True
             info[agent] = return_dict[agent][3]
             self.agents[agent].increment_step()
-
+        
+        done['__all__'] = done_check
         return next_obs, reward, done, info
