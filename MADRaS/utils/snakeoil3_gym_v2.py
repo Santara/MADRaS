@@ -205,6 +205,7 @@ class Client(object):
                 sockdata, addr = self.so.recvfrom(data_size)
                 sockdata = sockdata.decode('utf-8')
             except socket.error as emsg:
+                #print("[{}]: SocketData: {}".format(self.name, sockdata))
                 print("[{}]: SocketError: {}".format(self.name, emsg))
                 print("{} Waiting for server on {}............".format(self.name, self.port))
                 print("[{}]: Count Down : {}".format(self.name, n_fail))
@@ -275,6 +276,7 @@ class Client(object):
                 sockdata, addr = self.so.recvfrom(data_size)
                 sockdata = sockdata.decode('utf-8')
             except socket.error as emsg:
+                print("[{}]: SocketData: {}".format(self.name, sockdata))
                 print('[{}]: SocketError: {}'.format(self.name, emsg))
 
                 print("{} Waiting for server data on {}..............".format(self.name, self.port))

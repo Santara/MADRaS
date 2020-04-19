@@ -4,7 +4,7 @@ import math
 from copy import deepcopy
 
 
-class RewardManager(object):
+class RewardHandler(object):
     """Composes the reward function from a given reward configuration."""
     def __init__(self, cfg):
         self.rewards = {}
@@ -79,7 +79,7 @@ class ProgressReward(MadrasReward):
 class ProgressReward2(ProgressReward):
     def compute_reward(self, game_config, game_state):
         target_speed = game_config.target_speed / 50  # m/step
-        progress = game_state["distance_traversed"] - self.prev_dist
+        progress = game_state["distance_traversed"] - game_state["prev_distance_traversed"]
         reward = self.cfg["scale"] * np.min([1.0, progress/target_speed])
         self.prev_dist = deepcopy(game_state["distance_traversed"])
         return reward
@@ -87,9 +87,14 @@ class ProgressReward2(ProgressReward):
 
 class ProgressReward3(ProgressReward):
     def compute_reward(self, game_config, game_state):
-        target_speed = game_config.target_speed / 50  # m/step
-        progress = game_state["distance_traversed"] - self.prev_dist
+        #print("CURRENT {} PREV {} DIFF {}".format(game_state["distance_traversed"], self.prev_dist, game_state["distance_traversed"] - self.prev_dist))
+        target_speed = game_config.target_speed / 50.0  # m/step
+        progress = game_state["distance_traversed"] - game_state["prev_distance_traversed"]
         reward = self.cfg["scale"] * (progress/target_speed)
+        
+        #if (reward > 0.6):
+        #    print("CURRENT {} PREV {} DIFF {}".format(game_state["distance_traversed"], game_state["prev_distance_traversed"], game_state["distance_traversed"] - game_state["prev_distance_traversed"]))
+        #    print("PROGRESS {} rew {}".format(progress, progress/target_speed))
         self.prev_dist = deepcopy(game_state["distance_traversed"])
         return reward
 
@@ -117,7 +122,7 @@ class CollisionPenalty(MadrasReward):
     def compute_reward(self, game_config, game_state):
         del game_config
         reward = 0.0
-        if self.damage < game_state["damage"]:
+        if game_state["prev_damage"] < game_state["damage"]:
             reward = -self.cfg["scale"]
         return reward
 
@@ -166,9 +171,24 @@ class SuccessfulOvertakeReward(MadrasReward):
 
     def compute_reward(self, game_config, game_state):
         reward = 0.0
-        if math.isinf(self.rank):  # very fist step
-            self.rank = game_state["racePos"]
-        elif game_state["racePos"] < self.rank:
-            self.rank = game_state["racePos"]
+        if math.isinf(game_state["racePos"]):  # very fist step
+            return reward  
+        if game_state["racePos"] < game_state["prev_racePos"]:
+            #self.rank = game_state["racePos"]
             reward = self.cfg["scale"]
+        return reward
+
+class TaskReward(MadrasReward):
+    def __init__(self, cfg):
+        super(TaskReward, self).__init__(cfg)
+        self.got_reward = False
+
+    def reset(self):
+        self.got_reward = False
+
+    def compute_reward(self, game_config, game_state):
+        reward = 0
+        if ((game_state["racePos"] <= 2) and (not self.got_reward)):
+            reward = self.cfg["scale"] * 100
+            self.got_reward = False
         return reward

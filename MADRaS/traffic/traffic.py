@@ -2,14 +2,12 @@ import numpy as np
 from MADRaS.utils.gym_torcs_v2 import TorcsEnv
 import MADRaS.utils.snakeoil3_gym as snakeoil3
 from MADRaS.controllers.pid import PIDController
-import MADRaS.utils.madras_datatypes as md
 from multiprocessing import Process
 from collections import OrderedDict
 from time import time
 
-MadrasDatatypes = md.MadrasDatatypes()
 
-class MadrasTrafficManager(object):
+class MadrasTrafficHandler(object):
     """Creates the traffic agents for a given training configuration."""
     def __init__(self, torcs_server_port, num_learning_agents, cfg):
         self.traffic_agents = OrderedDict()
@@ -93,6 +91,7 @@ class MadrasTrafficAgent(object):
     def flag_off(self, random_seed=0):
         del random_seed
         self.wait_for_observation()
+        self.client.respond_to_server()
         print("[{}]: My server is at {}".format(self.name, self.client.serverPID))
         self.is_alive = True
         while True:
@@ -222,6 +221,7 @@ class ParkedAgent(MadrasTrafficAgent):
     def __init__(self, port, cfg, name):
         super(ParkedAgent, self).__init__(port, cfg, name)
         self.target_speed = cfg["target_speed"]/self.env.default_speed
+        self.track_len = cfg["track_len"]
 
     def flag_off(self, random_seed=0):
         self.time = time()
@@ -235,14 +235,21 @@ class ParkedAgent(MadrasTrafficAgent):
         self.parking_dist_from_start = (self.cfg["parking_dist_from_start"]["low"] +
                                         np.random.random()*parking_dist_range)
         self.behind_finish_line = True
-        self.prev_dist_from_start = 0
+        self.prev_dist_from_start = self.track_len
         self.parked = False
+        self.init_flag = True
         super(ParkedAgent, self).flag_off()
 
     def get_action(self):
         self.distance_from_start = self.ob.distFromStart
-        if self.distance_from_start < self.prev_dist_from_start:
+        
+        if (self.behind_finish_line):
+           self.distance_from_start -= self.track_len 
+
+        if (abs(self.distance_from_start) >= 0.95*self.track_len):
             self.behind_finish_line = False
+    
+        #print("START DIST:{}  TRACK LEN: {}".format(self.distance_from_start, self.track_len)) 
         if not self.behind_finish_line and self.distance_from_start >= self.parking_dist_from_start:
             self.steer, self.accel, self.brake = 0.0, 0.0, 1.0
             if not self.parked:

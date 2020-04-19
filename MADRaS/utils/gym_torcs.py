@@ -13,10 +13,10 @@ import collections as col
 from gym import spaces
 import numpy as np
 import copy
-import utils.snakeoil3_gym as snakeoil3
-import utils.madras_datatypes as md
+import MADRaS.utils.snakeoil3_gym as snakeoil3
+import MADRaS.utils.madras_datatypes as md
 
-madras = md.MadrasDatatypes()
+mt = md.MadrasDatatypes()
 
 
 class TorcsEnv:
@@ -40,8 +40,8 @@ class TorcsEnv:
         if throttle is False:                           # Throttle is generally True
             self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(1,))
         else:
-            high = np.array([1., 1., 1.], dtype=madras.floatX)
-            low = np.array([-1., 0., 0.], dtype=madras.floatX)
+            high = np.array([1., 1., 1.], dtype=mt.floatX)
+            low = np.array([-1., 0., 0.], dtype=mt.floatX)
             self.action_space = spaces.Box(low=low, high=high)    # steer,accel,brake
 
         if vision is False:                             # Vision has to be set True if you need the images from the simulator 
@@ -49,8 +49,8 @@ class TorcsEnv:
             low = -high
             self.observation_space = spaces.Box(low, high)
         else:
-            high = np.array([1., np.inf, np.inf, np.inf, 1., np.inf, 1., np.inf, 255], dtype=madras.floatX)
-            low = np.array([0., -np.inf, -np.inf, -np.inf, 0., -np.inf, 0., -np.inf, 0], dtype=madras.floatX)
+            high = np.array([1., np.inf, np.inf, np.inf, 1., np.inf, 1., np.inf, 255], dtype=mt.floatX)
+            low = np.array([0., -np.inf, -np.inf, -np.inf, 0., -np.inf, 0., -np.inf, 0], dtype=mt.floatX)
             self.observation_space = spaces.Box(low=low, high=high)
 
 
@@ -254,18 +254,18 @@ class TorcsEnv:
                      'wheelSpinVel',
                      'distFromStart']
             Observation = col.namedtuple('Observation', names)
-            return Observation(focus=np.array(raw_obs['focus'], dtype=madras.floatX)/200.,
-                               speedX=np.array(raw_obs['speedX'], dtype=madras.floatX)/self.default_speed,
-                               speedY=np.array(raw_obs['speedY'], dtype=madras.floatX)/self.default_speed,
-                               speedZ=np.array(raw_obs['speedZ'], dtype=madras.floatX)/self.default_speed,
-                               angle=np.array(raw_obs['angle'], dtype=madras.floatX)/3.1416,
-                               damage=np.array(raw_obs['damage'], dtype=madras.floatX),
-                               opponents=np.array(raw_obs['opponents'], dtype=madras.floatX)/200.,
-                               rpm=np.array(raw_obs['rpm'], dtype=madras.floatX)/10000,
-                               track=np.array(raw_obs['track'], dtype=madras.floatX)/200.,
-                               trackPos=np.array(raw_obs['trackPos'], dtype=madras.floatX)/1.,
-                               wheelSpinVel=np.array(raw_obs['wheelSpinVel'], dtype=madras.floatX),
-                               distFromStart=np.array(raw_obs['distFromStart'], dtype=madras.floatX))
+            return Observation(focus=np.array(raw_obs['focus'], dtype=mt.floatX)/200.,
+                               speedX=np.array(raw_obs['speedX'], dtype=mt.floatX)/self.default_speed,
+                               speedY=np.array(raw_obs['speedY'], dtype=mt.floatX)/self.default_speed,
+                               speedZ=np.array(raw_obs['speedZ'], dtype=mt.floatX)/self.default_speed,
+                               angle=np.array(raw_obs['angle'], dtype=mt.floatX)/3.1416,
+                               damage=np.array(raw_obs['damage'], dtype=mt.floatX),
+                               opponents=np.array(raw_obs['opponents'], dtype=mt.floatX)/200.,
+                               rpm=np.array(raw_obs['rpm'], dtype=mt.floatX)/10000,
+                               track=np.array(raw_obs['track'], dtype=mt.floatX)/200.,
+                               trackPos=np.array(raw_obs['trackPos'], dtype=mt.floatX)/1.,
+                               wheelSpinVel=np.array(raw_obs['wheelSpinVel'], dtype=mt.floatX),
+                               distFromStart=np.array(raw_obs['distFromStart'], dtype=mt.floatX))
         else:
             names = ['focus',
                      'speedX', 'speedY', 'speedZ', 'angle',
@@ -280,13 +280,13 @@ class TorcsEnv:
             # Get RGB from observation
             image_rgb = self.obs_vision_to_image_rgb(raw_obs[names[8]])
 
-            return Observation(focus=np.array(raw_obs['focus'], dtype=madras.floatX)/200.,
-                               speedX=np.array(raw_obs['speedX'], dtype=madras.floatX)/self.default_speed,
-                               speedY=np.array(raw_obs['speedY'], dtype=madras.floatX)/self.default_speed,
-                               speedZ=np.array(raw_obs['speedZ'], dtype=madras.floatX)/self.default_speed,
-                               opponents=np.array(raw_obs['opponents'], dtype=madras.floatX)/200.,
-                               rpm=np.array(raw_obs['rpm'], dtype=madras.floatX),
-                               track=np.array(raw_obs['track'], dtype=madras.floatX)/200.,
-                               trackPos=np.array(raw_obs['trackPos'], dtype=madras.floatX)/1.,
-                               wheelSpinVel=np.array(raw_obs['wheelSpinVel'], dtype=madras.floatX),
+            return Observation(focus=np.array(raw_obs['focus'], dtype=mt.floatX)/200.,
+                               speedX=np.array(raw_obs['speedX'], dtype=mt.floatX)/self.default_speed,
+                               speedY=np.array(raw_obs['speedY'], dtype=mt.floatX)/self.default_speed,
+                               speedZ=np.array(raw_obs['speedZ'], dtype=mt.floatX)/self.default_speed,
+                               opponents=np.array(raw_obs['opponents'], dtype=mt.floatX)/200.,
+                               rpm=np.array(raw_obs['rpm'], dtype=mt.floatX),
+                               track=np.array(raw_obs['track'], dtype=mt.floatX)/200.,
+                               trackPos=np.array(raw_obs['trackPos'], dtype=mt.floatX)/1.,
+                               wheelSpinVel=np.array(raw_obs['wheelSpinVel'], dtype=mt.floatX),
                                img=image_rgb)

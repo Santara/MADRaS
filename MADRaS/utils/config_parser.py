@@ -28,7 +28,7 @@ class MadrasEnvConfig(object):
         if cfg_dict is None:
             return
         direct_attributes = ['torcs_server_port', 'visualise', 'vision', 'no_of_visualizations', 'track_len',
-                             'max_steps', 'agents', 'traffic']
+                             'max_steps', 'agents', 'traffic', 'init_wait']
         for key in direct_attributes:
             if key in cfg_dict:
                 exec("self.{} = {}".format(key, cfg_dict[key]))

@@ -3,7 +3,7 @@ import math
 import warnings
 
 
-class DoneManager(object):
+class DoneHandler(object):
     """Composes the done function from a given done configuration."""
     def __init__(self, cfg):
         self.dones = {}
@@ -79,7 +79,7 @@ class TimeOut(MadrasDone):
         else:
             max_steps = game_config.max_steps
         if self.num_steps >= max_steps:
-            print("Done: Episode terminated due to timeout.")
+            print("Done: Episode terminated due to timeout.{}".format(self.num_steps))
             self.num_steps = 0
             return True
         else:
@@ -91,19 +91,19 @@ class TimeOut(MadrasDone):
 
 class Collision(MadrasDone):
     def __init__(self):
-        self.damage = 0.0
+        self.damage = 1000.0
 
     def check_done(self, game_config, game_state):
         del game_config
         if self.damage < game_state["damage"]:
             print("Done: Episode terminated because agent collided.")
-            self.damage = 0.0
+            self.damage = 1000.0
             return True
         else:
             return False
 
     def reset(self):
-        self.damage = 0.0
+        self.damage = 1000.0
 
 
 class TurnBackward(MadrasDone):

@@ -3,7 +3,7 @@ import math
 import warnings
 
 
-class DoneManager(object):
+class DoneHandler(object):
     """Composes the done function from a given done configuration."""
     def __init__(self, cfg, agent_id):
         self.agent_id = agent_id

@@ -102,10 +102,10 @@ class MadrasEnv(TorcsEnv, gym.Env):
             self.action_dim = 2  # LanePos, Velocity
         else:
             self.action_dim = 3  # Steer, Accel, Brake
-        self.observation_manager = om.ObservationManager(self._config.observations,
+        self.observation_handler = om.ObservationHandler(self._config.observations,
                                                          self._config.vision)
-        self.reward_manager = rm.RewardManager(self._config.rewards)
-        self.done_manager = dm.DoneManager(self._config.dones)
+        self.reward_handler = rm.RewardHandler(self._config.rewards)
+        self.done_handler = dm.DoneHandler(self._config.dones)
 
         TorcsEnv.__init__(self,
                           vision=self._config.vision,
@@ -117,9 +117,9 @@ class MadrasEnv(TorcsEnv, gym.Env):
         if self._config.normalize_actions:
             self.action_space = gym.spaces.Box(low=-np.ones(3), high=np.ones(3))
 
-        self.observation_space = self.observation_manager.get_observation_space()
+        self.observation_space = self.observation_handler.get_observation_space()
         
-        self.state_dim = self.observation_manager.get_state_dim()  # No. of sensors input
+        self.state_dim = self.observation_handler.get_state_dim()  # No. of sensors input
         self.env_name = 'Madras_Env'
         self.client_type = 0  # Snakeoil client type
         self.initial_reset = True
@@ -129,7 +129,7 @@ class MadrasEnv(TorcsEnv, gym.Env):
         self.seed()
         self.start_torcs_process()
         if self._config.traffic:
-            self.traffic_manager = traffic.MadrasTrafficManager(
+            self.traffic_handler = traffic.MadrasTrafficHandler(
                 self._config.torcs_server_port, 1, self._config.traffic)
 
     def seed(self, seed=None):
@@ -179,7 +179,7 @@ class MadrasEnv(TorcsEnv, gym.Env):
     def reset(self):
         """Reset Method to be called at the end of each episode."""
         if self._config.traffic:
-            self.traffic_manager.reset()
+            self.traffic_handler.reset()
 
         if self.initial_reset:
             self.wait_for_observation()
@@ -198,11 +198,11 @@ class MadrasEnv(TorcsEnv, gym.Env):
                     print("Reset: Reset failed as agent started off track. Retrying...")
 
         self.distance_traversed = 0
-        s_t = self.observation_manager.get_obs(self.ob, self._config)
+        s_t = self.observation_handler.get_obs(self.ob, self._config)
         if self._config.pid_assist:
             self.PID_controller.reset()
-        self.reward_manager.reset()
-        self.done_manager.reset()
+        self.reward_handler.reset()
+        self.done_handler.reset()
         print("Reset: Starting new episode")
         if np.any(np.asarray(self.ob.track) < 0):
             print("Reset produced bad track values.")
@@ -250,14 +250,14 @@ class MadrasEnv(TorcsEnv, gym.Env):
                       "damage": self.client.S.d["damage"],
                       "trackPos": self.client.S.d["trackPos"],
                       "track": self.client.S.d["track"]}
-        reward = self.reward_manager.get_reward(self._config, game_state)
+        reward = self.reward_handler.get_reward(self._config, game_state)
 
-        done = self.done_manager.get_done_signal(self._config, game_state)
+        done = self.done_handler.get_done_signal(self._config, game_state)
 
-        next_obs = self.observation_manager.get_obs(self.ob, self._config)
+        next_obs = self.observation_handler.get_obs(self.ob, self._config)
         if done:
             if self._config.traffic:
-                self.traffic_manager.kill_all_traffic_agents()
+                self.traffic_handler.kill_all_traffic_agents()
             self.client.R.d["meta"] = True  # Terminate the episode
             print('Terminating PID {}'.format(self.client.serverPID))
 
@@ -295,16 +295,16 @@ class MadrasEnv(TorcsEnv, gym.Env):
                           "damage": self.client.S.d["damage"],
                           "trackPos": self.client.S.d["trackPos"],
                           "track": self.client.S.d["track"]}
-            reward += self.reward_manager.get_reward(self._config, game_state)
+            reward += self.reward_handler.get_reward(self._config, game_state)
             if self._config.pid_assist:
                 self.PID_controller.update(self.ob)
-            done = self.done_manager.get_done_signal(self._config, game_state)
+            done = self.done_handler.get_done_signal(self._config, game_state)
             if done:
                 self.client.R.d["meta"] = True  # Terminate the episode
                 print('Terminating PID {}'.format(self.client.serverPID))
                 break
 
-        next_obs = self.observation_manager.get_obs(self.ob, self._config)
+        next_obs = self.observation_handler.get_obs(self.ob, self._config)
 
         return next_obs, reward, done, info
 
