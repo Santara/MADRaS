@@ -478,7 +478,7 @@ class MadrasEnv(gym.Env):
         #import pdb; pdb.set_trace()
         if not self.initial_reset:
             self.reset_torcs()
-            self.torcs_server_config.generate_torcs_server_config()
+            # self.torcs_server_config.generate_torcs_server_config()
         else:
             self.initial_reset = False
 
