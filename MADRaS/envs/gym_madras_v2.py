@@ -28,6 +28,7 @@ import time
 from mpi4py import MPI
 import socket
 import MADRaS.utils.config_parser as config_parser
+import MADRaS.utils.torcs_server_config as torcs_config
 import MADRaS.utils.reward_handler as rm
 import MADRaS.utils.done_handler_v2 as dm
 import MADRaS.utils.observation_handler as om
@@ -282,6 +283,9 @@ class MadrasAgent(TorcsEnv, gym.Env):
         return next_obs, reward, done, info
 
     def step(self, action, e, return_dict={}):
+        if self._config.add_noise_to_actions:
+            noise = np.random.normal(scale=self._config.action_noise_std, size=self.action_dim)
+            action += noise
         if self._config.pid_assist:
             return_dict[self.name] = self.step_pid(action, e)
         else:
@@ -357,14 +361,19 @@ class MadrasEnv(gym.Env):
         self.communications_map = dict()
         self.torcs_proc = None
         self.seed()
-        self.start_torcs_process()
-        self.num_agents = 0
+        
+        self.num_agents = len(self._config.agents)
         self.agents = OrderedDict()
         self.init_wait = self._config.init_wait
+        self.torcs_server_config = torcs_config.TorcsConfig(
+            self._config.server_config, num_learning_cars= self.num_agents, randomize=self._config.randomize_env)
+        self.start_torcs_process()
         if self._config.traffic:
             self.traffic_handler = traffic.MadrasTrafficHandler(
-                self._config.torcs_server_port, len(self.agents), self._config.traffic)
+                self._config.torcs_server_port, len(self.agents), self._config.traffic) 
+        
         num_traffic_agents = len(self._config.traffic) if self._config.traffic else 0
+        
         if self._config.agents:
             for i, agent in enumerate(self._config.agents):
                 agent_name = [x for x in agent.keys()][0]
@@ -376,8 +385,6 @@ class MadrasEnv(gym.Env):
                                                 {"track_len": self._config.track_len,
                                                  "max_steps": self._config.max_steps
                                                 })
-                    
-                self.num_agents += 1
             
             if os.path.isfile(DEFAULT_COMMUNICATION_MAP):
                 self.communications_map = config_parser.parse_yaml(DEFAULT_COMMUNICATION_MAP)
@@ -385,7 +392,8 @@ class MadrasEnv(gym.Env):
             print("COMMUNICATIONS MAP", self.communications_map)
             for comm_agent, agent_attrs in self.communications_map.items():
                 self.agents[comm_agent].comms_init(agent_attrs)
-            
+        
+           
         # TODO(santara): Can I not have different action dims for different agents?
         self.action_space = self.agents["MadrasAgent_0"].action_space
         self.observation_space = self.agents["MadrasAgent_0"].observation_space
@@ -417,6 +425,7 @@ class MadrasEnv(gym.Env):
         udp.close()
 
     def start_torcs_process(self):
+        #import pdb; pdb.set_trace()
         if self.torcs_proc is not None:
             os.killpg(os.getpgid(self.torcs_proc.pid), signal.SIGKILL)
             time.sleep(0.5)
@@ -436,9 +445,9 @@ class MadrasEnv(gym.Env):
     def execute_torcs_launch_command(self):
         command = None
         rank = MPI.COMM_WORLD.Get_rank()
-
+        self.torcs_server_config.generate_torcs_server_config()
         if rank < self._config.no_of_visualisations and self._config.visualise:
-            command = 'export TORCS_PORT={} && vglrun torcs -t 10000000 -nolaptime'.format(
+            command = 'export TORCS_PORT={} && torcs -t 10000000 -nolaptime'.format(
                        self._config.torcs_server_port)
         else:
             command = 'export TORCS_PORT={} && torcs -t 10000000 -r ~/.torcs/config/raceman/quickrace.xml -nolaptime'.format(self._config.torcs_server_port)
@@ -466,6 +475,7 @@ class MadrasEnv(gym.Env):
 
     def reset(self):
         """Reset Method to be called at the end of each episode."""
+        #import pdb; pdb.set_trace()
         if not self.initial_reset:
             self.reset_torcs()
         else:

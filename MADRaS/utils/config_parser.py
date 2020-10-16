@@ -15,6 +15,10 @@ class MadrasEnvConfig(object):
         self.no_of_visualisations = 1
         self.track_len = 7014.6
         self.max_steps = 20000
+        self.server_config = {}
+        self.noisy_observations = False
+        self.track_limits = {'low': -1, 'high': 1}
+        self.randomoze_env = False
         self.agents = {}
         self.traffic = []
 
@@ -28,7 +32,8 @@ class MadrasEnvConfig(object):
         if cfg_dict is None:
             return
         direct_attributes = ['torcs_server_port', 'visualise', 'vision', 'no_of_visualizations', 'track_len',
-                             'max_steps', 'agents', 'traffic', 'init_wait']
+                             'max_steps', 'agents', 'traffic', 'init_wait', 'server_config', 'track_limits',
+                             'randomize_env']
         for key in direct_attributes:
             if key in cfg_dict:
                 exec("self.{} = {}".format(key, cfg_dict[key]))
@@ -50,6 +55,8 @@ class MadrasAgentConfig(object):
         self.normalize_actions = False
         self.early_stop = True
         self.observations = None
+        self.action_noise_std = 0.001
+        self.add_noise_to_actions = False
         self.rewards = {}
         self.dones = {}
 
@@ -64,7 +71,7 @@ class MadrasAgentConfig(object):
             return
         direct_attributes = ['track_len', 'max_steps', 'vision', 'throttle', 'gear_change', 'pid_assist',
                              'pid_latency', 'target_speed', 'early_stop', 'normalize_actions', 'observations', 'rewards', 'dones',
-                             'pid_settings']
+                             'pid_settings', 'action_noise_std', 'add_noise_to_actions']
         for key in direct_attributes:
             if key in cfg_dict:
                 exec("self.{} = {}".format(key, cfg_dict[key]))
