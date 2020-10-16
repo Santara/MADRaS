@@ -380,7 +380,7 @@ class MadrasEnv(gym.Env):
                 
                 agent_cfg = agent[agent_name]
                 name = '{}_{}'.format(agent_name, i)
-                torcs_server_port = self._config.torcs_server_port + i + num_traffic_agents
+                torcs_server_port = self._config.torcs_server_port + i + self.torcs_server_config.num_traffic_cars
                 self.agents[name] = MadrasAgent(name, torcs_server_port, agent_cfg,
                                                 {"track_len": self._config.track_len,
                                                  "max_steps": self._config.max_steps
@@ -478,16 +478,18 @@ class MadrasEnv(gym.Env):
         #import pdb; pdb.set_trace()
         if not self.initial_reset:
             self.reset_torcs()
+            self.torcs_server_config.generate_torcs_server_config()
         else:
             self.initial_reset = False
 
         if self._config.traffic:
-            self.traffic_handler.reset()
+            self.traffic_handler.reset(self.torcs_server_config.num_traffic_cars)
        
         s_t = OrderedDict()
 
         # Create clients and connect their sockets 
-        for agent in self.agents:
+        for i, agent in enumerate(self.agents):
+            self.agents[agent].torcs_server_port = self._config.torcs_server_port + i + self.torcs_server_config.num_traffic_cars
             self.agents[agent].create_new_client()
 
         # Collect first observations

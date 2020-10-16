@@ -29,12 +29,11 @@ class MadrasTrafficHandler(object):
     def get_traffic_agents(self):
         return self.traffic_agents
 
-    def flag_off_traffic(self):
+    def flag_off_traffic(self, num_cars_to_reset):
         self.num_episodes_of_training += 1
         for i, agent in enumerate(self.traffic_agents.values()):
-            self.traffic_processes.append(
-                Process(target=agent.flag_off,
-                        args=(i+self.num_episodes_of_training,)))
+            if i < num_cars_to_reset:
+                self.traffic_processes.append(Process(target=agent.flag_off, args=(i+self.num_episodes_of_training,)))
         for traffic_process in self.traffic_processes:
             traffic_process.start()
 
@@ -43,9 +42,10 @@ class MadrasTrafficHandler(object):
             traffic_process.terminate()
         self.traffic_processes = []
 
-    def reset(self):
+    def reset(self, num_cars_to_reset):
         self.kill_all_traffic_agents()
-        self.flag_off_traffic()
+        self.flag_off_traffic(num_cars_to_reset)
+
 
 
 class MadrasTrafficAgent(object):

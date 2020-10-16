@@ -81,7 +81,9 @@ class TorcsConfig(object):
         if not self.randomize:
             return self.max_cars-self.num_learning_cars
         else:
-            num_traffic_cars = np.random.randint(low=self.min_traffic_cars, high=self.max_cars)
+            if (self.min_traffic_cars == (self.max_cars-self.num_learning_cars)):
+                return 0
+            num_traffic_cars = np.random.randint(low=self.min_traffic_cars, high=self.max_cars-self.num_learning_cars+1)
             return num_traffic_cars
 
     def get_track_name(self):
